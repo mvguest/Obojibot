@@ -78,7 +78,7 @@ std::string read_file(const std::string& filename) {
 std::string ask_ai(const std::string& question, const std::string& apiKey) {
     if (apiKey.empty()) return "❌ GEMINI_API_KEY não configurada!";
 
-    std::string knowledge = read_file("conhecimento.txt");
+    std::string knowledge = read_file("res/Obojima.txt");
     std::string prompt = "Base de conhecimento:\n" + knowledge + "\n\nPergunta do usuário:\n" + question;
 
     CURL* curl = curl_easy_init();
