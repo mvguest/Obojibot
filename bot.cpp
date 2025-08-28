@@ -123,6 +123,41 @@ std::string ask_ai(const std::string& question, const std::string& apiKey) {
     }
 }
 
+void send_long_message(const dpp::slashcommand_t& event, const std::string& text) {
+    if (text.length() <= 2000) {
+        event.edit_original_response(dpp::message(text));
+        return;
+    }
+
+    std::vector<std::string> parts;
+    std::string current_part;
+    std::string remaining_text = text;
+
+    while (!remaining_text.empty()) {
+        if (remaining_text.length() <= 2000) {
+            parts.push_back(remaining_text);
+            remaining_text.clear();
+        } else {
+            size_t split_pos = remaining_text.rfind('.', 1999);
+            if (split_pos == std::string::npos) {
+                split_pos = remaining_text.rfind('\n', 1999);
+            }
+            if (split_pos == std::string::npos || split_pos < 500) {
+                split_pos = 1999;
+            }
+
+            parts.push_back(remaining_text.substr(0, split_pos + 1));
+            remaining_text = remaining_text.substr(split_pos + 1);
+        }
+    }
+
+    event.edit_original_response(dpp::message(parts[0]));
+
+    for (size_t i = 1; i < parts.size(); ++i) {
+        event.from()->creator->message_create(dpp::message(event.command.channel_id, parts[i]));
+    }
+}
+
 int main() {
     json config;
     try {
@@ -154,11 +189,12 @@ int main() {
             event.reply(get_inventory(user_id));
         } else if (event.command.get_command_name() == "obojichat") {
             std::string message = std::get<std::string>(event.get_parameter("message"));
+
             event.reply(dpp::message("Aguarde...").set_flags(dpp::m_ephemeral));
 
             std::thread([&, event, message, api_key]() {
                 std::string reply = ask_ai(message, api_key);
-                event.edit_original_response(dpp::message(reply));
+                send_long_message(event, reply);
             }).detach();
         }
     });
