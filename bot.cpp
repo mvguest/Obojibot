@@ -154,8 +154,12 @@ int main() {
             event.reply(get_inventory(user_id));
         } else if (event.command.get_command_name() == "obojichat") {
             std::string message = std::get<std::string>(event.get_parameter("message"));
-            std::string reply = ask_ai(message, api_key);
-            event.reply(reply);
+            event.reply(dpp::message("Aguarde...").set_flags(dpp::m_ephemeral));
+
+            std::thread([&, event, message, api_key]() {
+                std::string reply = ask_ai(message, api_key);
+                event.edit_original_response(dpp::message(reply));
+            }).detach();
         }
     });
 
